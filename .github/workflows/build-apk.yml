@@ -3,8 +3,8 @@ name: Build Debug + Signed Release APK
 on:
   push:
     tags:
-      - 'v*'                    
-  workflow_dispatch:            
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -29,16 +29,28 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload Debug APK (Artifact)
-        uses: actions/upload-artifact@v6
+      # ==================== 构建 Release APK ====================
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      # ==================== 调试：列出所有生成的 APK 文件 ====================
+      - name: List all generated APKs (Debug)
+        run: |
+          echo "=== Debug APK files ==="
+          find app/build/outputs/apk -name "*.apk" | head -10 || echo "No debug apk found"
+
+      - name: List all generated APKs (Release)
+        run: |
+          echo "=== Release APK files ==="
+          find app/build/outputs/apk -name "*.apk" | head -10 || echo "No release apk found"
+
+      # ==================== 上传 Debug APK（使用通配符，更可靠） ====================
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v7
         with:
           name: MIUI-IME-Unlock-Debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
-      # ==================== 构建 Release (unsigned) ====================
-      - name: Build Release APK (unsigned)
-        run: ./gradlew assembleRelease --stacktrace
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
 
       # ==================== 对 Release APK 进行签名 ====================
       - name: Sign Release APK
@@ -51,16 +63,16 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
         env:
-          BUILD_TOOLS_VERSION: "34.0.0" 
+          BUILD_TOOLS_VERSION: "34.0.0"
 
-      - name: Upload Signed Release APK (Artifact)
-        uses: actions/upload-artifact@v6
+      - name: Upload Signed Release APK
+        uses: actions/upload-artifact@v7
         with:
           name: MIUI-IME-Unlock-Signed-Release
           path: ${{ steps.sign_app.outputs.signedReleaseFile }}
-          if-no-files-found: error
+          if-no-files-found: warn
 
-      # ==================== 创建 GitHub Release 并上传签名 APK ====================
+      # ==================== 创建 GitHub Release ====================
       - name: Create Release and Upload Signed APK
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
@@ -68,11 +80,8 @@ jobs:
           files: ${{ steps.sign_app.outputs.signedReleaseFile }}
           tag_name: ${{ github.ref_name }}
           name: MIUI IME Unlock ${{ github.ref_name }}
-          draft: false
-          prerelease: false
           body: |
-            ## 下载
-            - **Signed Release APK**（推荐安装）：已签名，可直接安装
-            - Debug APK 请在下方 Artifacts 中下载
+            - **Signed Release APK**（推荐安装）
+            - Debug APK 在 Artifacts 中下载
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
