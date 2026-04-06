@@ -49,32 +49,32 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
 
-      # ==================== 调试：列出实际生成的文件（非常重要） ====================
+      # ==================== 列出生成的文件（调试用） ====================
       - name: List Generated APK Files
         run: |
           echo "=== All APK files found ==="
-          find app/build/outputs -name "*.apk" -type f | sort || echo "No APK found!"
+          find app/build/outputs -name "*.apk" -type f | sort
 
       # ==================== Decode Keystore ====================
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
-      # ==================== Zipalign + Sign ====================
+      # ==================== Zipalign + Sign Release APK ====================
       - name: Align and Sign Release APK
         run: |
-          # 使用通配符自动找到 release apk（最稳妥）
-          UNSIGNED_APK=$(find app/build/outputs/apk/release -name "app-release*.apk" -type f | head -n 1)
+          # 自动查找实际生成的 release apk（适配 WeType_UI_Enhanced-xxx_release.apk）
+          UNSIGNED_APK=$(find app/build/outputs/apk/release -name "*_release.apk" -type f | head -n 1)
 
           if [ -z "$UNSIGNED_APK" ]; then
             echo "❌ Error: No release APK found!"
             exit 1
           fi
 
-          echo "Found unsigned APK: $UNSIGNED_APK"
+          echo "✅ Found unsigned APK: $UNSIGNED_APK"
 
           ALIGNED_APK="app/build/outputs/apk/release/app-release-aligned.apk"
-          SIGNED_APK="app/build/outputs/apk/release/app-release-signed.apk"
+          SIGNED_APK="app/build/outputs/apk/release/WeType_UI_Enhanced-signed.apk"
 
           # 对齐
           zipalign -v 4 "$UNSIGNED_APK" "$ALIGNED_APK"
@@ -88,17 +88,17 @@ jobs:
             --out "$SIGNED_APK" \
             "$ALIGNED_APK"
 
-          # 验证
+          # 验证签名
           apksigner verify --verbose "$SIGNED_APK"
 
           echo "✅ Signed APK created: $SIGNED_APK"
 
-      # ==================== 上传 Signed APK ====================
+      # ==================== 上传 Signed Release APK ====================
       - name: Upload Signed Release APK
         uses: actions/upload-artifact@v7
         with:
           name: MIUI-IME-Unlock-Signed-Release
-          path: app/build/outputs/apk/release/app-release-signed.apk
+          path: app/build/outputs/apk/release/WeType_UI_Enhanced-signed.apk
           if-no-files-found: warn
 
       # ==================== 创建 GitHub Release ====================
@@ -106,13 +106,13 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/app-release-signed.apk
+          files: app/build/outputs/apk/release/WeType_UI_Enhanced-signed.apk
           tag_name: ${{ github.ref_name }}
           name: MIUI IME Unlock ${{ github.ref_name }}
           body: |
             ## 下载
-            - **Signed Release APK**（推荐）
-            - Debug APK 在 Artifacts 中下载
+            - **Signed Release APK**（推荐安装）：WeType_UI_Enhanced-signed.apk
+            - Debug APK 请在 Artifacts 中下载
           draft: false
           prerelease: false
         env:
