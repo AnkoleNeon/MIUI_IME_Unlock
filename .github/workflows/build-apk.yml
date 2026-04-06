@@ -22,21 +22,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # ==================== 设置 Android SDK 并安装 build-tools ====================
-      - name: Setup Android SDK
+      - name: Setup Android SDK & Build Tools
         uses: android-actions/setup-android@v3
 
-      - name: Install Build Tools (包含 zipalign & apksigner)
-        run: |
-          sdkmanager --install "build-tools;34.0.0" --sdk_root=$ANDROID_HOME
-          echo "Build tools installed"
+      - name: Install Build Tools
+        run: sdkmanager --install "build-tools;34.0.0" --sdk_root=$ANDROID_HOME
 
       - name: Add Build Tools to PATH
-        run: |
-          BUILD_TOOLS_PATH="$ANDROID_HOME/build-tools/34.0.0"
-          echo "$BUILD_TOOLS_PATH" >> $GITHUB_PATH
-          ls -l $BUILD_TOOLS_PATH/zipalign
-          ls -l $BUILD_TOOLS_PATH/apksigner
+        run: echo "$ANDROID_HOME/build-tools/34.0.0" >> $GITHUB_PATH
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -53,18 +46,33 @@ jobs:
           if-no-files-found: warn
 
       # ==================== 构建 Release APK ====================
-      - name: Build Release APK (unsigned)
+      - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
+
+      # ==================== 调试：列出实际生成的文件（非常重要） ====================
+      - name: List Generated APK Files
+        run: |
+          echo "=== All APK files found ==="
+          find app/build/outputs -name "*.apk" -type f | sort || echo "No APK found!"
 
       # ==================== Decode Keystore ====================
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/keystore.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
-      # ==================== Zipalign + Sign APK ====================
+      # ==================== Zipalign + Sign ====================
       - name: Align and Sign Release APK
         run: |
-          UNSIGNED_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+          # 使用通配符自动找到 release apk（最稳妥）
+          UNSIGNED_APK=$(find app/build/outputs/apk/release -name "app-release*.apk" -type f | head -n 1)
+
+          if [ -z "$UNSIGNED_APK" ]; then
+            echo "❌ Error: No release APK found!"
+            exit 1
+          fi
+
+          echo "Found unsigned APK: $UNSIGNED_APK"
+
           ALIGNED_APK="app/build/outputs/apk/release/app-release-aligned.apk"
           SIGNED_APK="app/build/outputs/apk/release/app-release-signed.apk"
 
@@ -80,12 +88,12 @@ jobs:
             --out "$SIGNED_APK" \
             "$ALIGNED_APK"
 
-          # 验证签名
+          # 验证
           apksigner verify --verbose "$SIGNED_APK"
 
-          echo "Signed APK created: $SIGNED_APK"
+          echo "✅ Signed APK created: $SIGNED_APK"
 
-      # ==================== 上传 Signed Release APK ====================
+      # ==================== 上传 Signed APK ====================
       - name: Upload Signed Release APK
         uses: actions/upload-artifact@v7
         with:
@@ -103,8 +111,8 @@ jobs:
           name: MIUI IME Unlock ${{ github.ref_name }}
           body: |
             ## 下载
-            - **Signed Release APK**（推荐安装）
-            - Debug APK 请在 Artifacts 中下载
+            - **Signed Release APK**（推荐）
+            - Debug APK 在 Artifacts 中下载
           draft: false
           prerelease: false
         env:
