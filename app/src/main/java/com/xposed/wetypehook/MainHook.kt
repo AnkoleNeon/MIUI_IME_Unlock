@@ -67,7 +67,7 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
         // 检查是否支持全面屏优化
-        if (lpparam.packageName != WETYPE_PACKAGE && PropertyUtils["ro.miui.support_miui_ime_bottom", "0"] != "1") return
+        //if (lpparam.packageName != WETYPE_PACKAGE && PropertyUtils["ro.miui.support_miui_ime_bottom", "0"] != "1") return
         EzXHelperInit.initHandleLoadPackage(lpparam)
         EzXHelperInit.setLogTag(TAG)
         Log.i("miuiime is supported")
