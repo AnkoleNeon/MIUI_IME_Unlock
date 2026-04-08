@@ -66,6 +66,8 @@
     <string name="settings_candidate_corner_desc">Edit the first candidate background corner radius.</string>
     <string name="settings_candidate_pinyin_margin_title">Candidate pinyin left margin</string>
     <string name="settings_candidate_pinyin_margin_desc">Edit the left padding of the pinyin area.</string>
+    <string name="settings_candidate_padding_start_title">Candidate words left margin</string>
+    <string name="settings_candidate_padding_start_desc">Edit the left padding of the Candidate area.</string>
 
     <string name="settings_save_title">Save settings</string>
     <string name="settings_save_desc">Write the current configuration to the module</string>
