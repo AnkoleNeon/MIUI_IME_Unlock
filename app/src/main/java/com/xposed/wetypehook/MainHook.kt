@@ -54,7 +54,6 @@ private val WETYPE_DRAWABLE_REPLACEMENTS = mapOf(
     "gj" to R.drawable.wetype_gj,
 )
 
-
 class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
     private val miuiImeList: List<String> = listOf(
         "com.iflytek.inputmethod.miui",
@@ -74,7 +73,6 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
     }
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
-        // 检查是否支持全面屏优化
         if (lpparam.packageName != WETYPE_PACKAGE && PropertyUtils["ro.miui.support_miui_ime_bottom", "0"] != "1") return
         EzXHelperInit.initHandleLoadPackage(lpparam)
         EzXHelperInit.setLogTag(TAG)
@@ -101,13 +99,13 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
             hookWeTypeSelfDrawKeyColors()
             hookWeTypeCandidateBackgroundCorner()
             hookWeTypeCandidatePinyinLeftMargin()
+            hookWeTypeCandidatePaddingStart()   // 新增
             hookWeTypeWindowBlur()
             hookWeTypeWindowCorner()
             hookWeTypeIntentEntry()
             hookWeTypeAboutLogoEntry()
         }
 
-        // 检查是否为小米定制输入法
         val isNonCustomize = !miuiImeList.contains(lpparam.packageName)
         if (isNonCustomize) {
             val sInputMethodServiceInjector =
@@ -126,7 +124,6 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
             lpparam.classLoader
         )
 
-        // 获取常用语的ClassLoader
         findMethod("android.inputmethodservice.InputMethodModuleManager") {
             name == "loadDex" && parameterTypes.sameAs(ClassLoader::class.java, String::class.java)
         }.hookAfter { param ->
@@ -143,7 +140,6 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
                     hookIsXiaoAiEnable(it)
                 }
 
-                // 针对A11的修复切换输入法列表
                 it.getDeclaredMethod("getSupportIme").hookReplace { _ ->
                     it.getStaticObject("sBottomViewHelper")
                         .getObjectAs<InputMethodManager>("mImm").enabledInputMethodList
@@ -198,6 +194,11 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
 
     private fun hookWeTypeCandidatePinyinLeftMargin() {
         WeTypeResourceHooks.hookCandidatePinyinLeftMargin()
+    }
+
+    // 新增 Hook
+    private fun hookWeTypeCandidatePaddingStart() {
+        WeTypeResourceHooks.hookCandidatePaddingStart()
     }
 
     private fun hookWeTypeWindowCorner() {
@@ -309,11 +310,6 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
         ).also { moduleResources = it }
     }
 
-    /**
-     * 跳过包名检查，直接开启输入法优化
-     *
-     * @param clazz 声明或继承字段的类
-     */
     private fun hookSIsImeSupport(clazz: Class<*>) {
         kotlin.runCatching {
             clazz.putStaticObject("sIsImeSupport", 1)
@@ -324,11 +320,6 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
         }
     }
 
-    /**
-     * 小爱语音输入按钮失效修复
-     *
-     * @param clazz 声明或继承方法的类
-     */
     private fun hookIsXiaoAiEnable(clazz: Class<*>) {
         kotlin.runCatching {
             clazz.getMethod("isXiaoAiEnable").hookReturnConstant(false)
@@ -338,14 +329,8 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
         }
     }
 
-    /**
-     * 在适当的时机修改抬高区域背景颜色
-     *
-     * @param clazz 声明或继承字段的类
-     */
     private fun setPhraseBgColor(clazz: Class<*>, forceTransparent: Boolean) {
         kotlin.runCatching {
-            // 导航栏颜色被设置后, 将颜色存储起来并传递给常用语
             val setNavigationBarColorMethod = findMethod("com.android.internal.policy.PhoneWindow") {
                 name == "setNavigationBarColor" && parameterTypes.sameAs(Int::class.java)
             }
@@ -374,7 +359,6 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
                 }
             }
 
-            // 当常用语被创建后, 将背景颜色设置为存储的导航栏颜色
             clazz.findMethod { name == "addMiuiBottomView" }.hookAfter {
                 customizeBottomViewColor(clazz, forceTransparent)
             }
@@ -384,11 +368,6 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
         }
     }
 
-    /**
-     * 将导航栏颜色赋值给输入法优化的底图
-     *
-     * @param clazz 声明或继承字段的类
-     */
     private fun customizeBottomViewColor(clazz: Class<*>, forceTransparent: Boolean) {
         if (forceTransparent) {
             val contentColor = resolveTransparentBottomViewContentColor()
@@ -424,11 +403,6 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
         Color.blue(color)
     )
 
-    /**
-     * 针对A10的修复切换输入法列表
-     *
-     * @param className 声明或继承方法的类的名称
-     */
     private fun hookDeleteNotSupportIme(className: String, classLoader: ClassLoader) {
         kotlin.runCatching {
             findMethod(className, classLoader) { name == "deleteNotSupportIme" }
@@ -439,21 +413,6 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
         }
     }
 
-    /**
-     * Hook 获取应用列表权限，为所有输入法强制提供获取输入法列表的权限。
-     * 用于修复部分输入法（搜狗输入法小米版等）缺少获取输入法列表权限，导致切换输入法功能不能显示其他输入法的问题。
-     * 理论等效于在输入法的AndroidManifest.xml中添加:
-     * ```xml
-     * <manifest>
-     *     <queries>
-     *         <intent>
-     *             <action android:name="android.view.InputMethod" />
-     *         </intent>
-     *     </queries>
-     * </manifest>
-     * ```
-     * 当前实现可能影响开机速度，如需此修复需手动设置系统框架作用域。
-     */
     private fun startPermissionHook() {
         runCatching {
             findMethod("com.android.server.pm.AppsFilterUtils") {
