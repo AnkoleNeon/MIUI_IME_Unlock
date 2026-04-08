@@ -366,7 +366,7 @@ private fun WeTypeSettingsScreen(
     var candidatePinyinLeftMarginDp by rememberSaveable {
         mutableStateOf(snapshot.candidatePinyinLeftMarginDp.toString())
     }
-    // 新增：候选栏左侧内边距状态
+    // 新增：候选栏左侧内边距
     var candidatePaddingStartDp by rememberSaveable {
         mutableStateOf(snapshot.candidatePaddingStartDp.toString())
     }
@@ -436,7 +436,7 @@ private fun WeTypeSettingsScreen(
             candidateBackgroundCorner = candidateBackgroundCorner.toFloat(),
             candidatePinyinLeftMarginDp = candidatePinyinLeftMarginDp.toIntOrNull()
                 ?: WeTypeSettings.DEFAULT_CANDIDATE_PINYIN_LEFT_MARGIN_DP,
-            candidatePaddingStartDp = candidatePaddingStartDp.toFloatOrNull()   // 新增
+            candidatePaddingStartDp = candidatePaddingStartDp.toFloatOrNull()
                 ?: WeTypeSettings.DEFAULT_CANDIDATE_PADDING_START_DP,
             appearanceColors = currentAppearanceColors()
         )
@@ -456,7 +456,7 @@ private fun WeTypeSettingsScreen(
         keyColorHookAlpha = WeTypeSettings.DEFAULT_KEY_COLOR_HOOK_ALPHA
         candidateBackgroundCorner = WeTypeSettings.DEFAULT_CANDIDATE_BACKGROUND_CORNER.roundToInt()
         candidatePinyinLeftMarginDp = WeTypeSettings.DEFAULT_CANDIDATE_PINYIN_LEFT_MARGIN_DP.toString()
-        candidatePaddingStartDp = WeTypeSettings.DEFAULT_CANDIDATE_PADDING_START_DP.toString()  // 新增
+        candidatePaddingStartDp = WeTypeSettings.DEFAULT_CANDIDATE_PADDING_START_DP.toString()
         appearanceGroups.forEachIndexed { index, group ->
             appearanceGroupColors[index] = group.defaultColor
         }
@@ -529,7 +529,7 @@ private fun WeTypeSettingsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 颜色分组（保持不变）
+            // 颜色分组
             item {
                 SmallTitle(
                     text = stringResource(R.string.settings_group_color)
@@ -539,7 +539,6 @@ private fun WeTypeSettingsScreen(
                     insideMargin = PaddingValues(0.dp)
                 ) {
                     Column {
-                        // ... 原有颜色分组内容保持不变 ...
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -646,7 +645,7 @@ private fun WeTypeSettingsScreen(
                 }
             }
 
-            // 外观分组（重点修改部分）
+            // 外观分组
             item {
                 SmallTitle(
                     text = stringResource(R.string.settings_group_appearance)
@@ -720,7 +719,7 @@ private fun WeTypeSettingsScreen(
                             }
                         )
 
-                        // 新增：候选栏左侧内边距设置项（与拼音左边距风格完全一致）
+                        // 新增设置项：候选栏左侧内边距（与拼音左边距风格一致）
                         NumericTextSettingItem(
                             title = stringResource(R.string.settings_candidate_padding_start_title),
                             summary = stringResource(R.string.settings_candidate_padding_start_desc),
@@ -749,7 +748,7 @@ private fun WeTypeSettingsScreen(
                 }
             }
 
-            // 操作分组（保持不变）
+            // 操作分组
             item {
                 SmallTitle(
                     text = stringResource(R.string.settings_group_actions)
