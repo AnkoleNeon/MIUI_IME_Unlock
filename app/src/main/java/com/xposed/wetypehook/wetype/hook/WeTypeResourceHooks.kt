@@ -350,6 +350,46 @@ internal object WeTypeResourceHooks {
         }
     }
 
+    /**
+     * 新增：Hook 候选栏整体左侧内边距 (paddingStart)
+     * 对应设置项：candidatePaddingStartDp
+     */
+    fun hookCandidatePaddingStart() {
+        runCatching {
+            // Hook ImeCandidateView 初始化完成时应用 paddingStart
+            findMethod("com.tencent.wetype.plugin.hld.candidate.ImeCandidateView") {
+                name == "onFinishInflate" && parameterTypes.isEmpty()
+            }.hookAfter { param ->
+                val view = param.thisObject as? View ?: return@hookAfter
+
+                val paddingStartDp = WeTypeSettings.getCandidatePaddingStartDpXposed()
+
+                val paddingStartPx = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    paddingStartDp,
+                    view.resources.displayMetrics
+                ).roundToInt()
+
+                // 只修改左侧 paddingStart，保留其他方向
+                if (view.paddingStart != paddingStartPx) {
+                    view.setPadding(
+                        paddingStartPx,
+                        view.paddingTop,
+                        view.paddingEnd,
+                        view.paddingBottom
+                    )
+                    view.requestLayout()
+                    view.invalidate()
+                }
+            }
+
+            Log.i("Success: Hook candidate paddingStart (ImeCandidateView)")
+        }.onFailure {
+            Log.i("Failed: Hook candidate paddingStart")
+            Log.i(it)
+        }
+    }
+
     private fun hookCandidatePinyinLayoutInflation(layoutResId: Int?, inflatedRoot: View?) {
         if (layoutResId == null || inflatedRoot == null) return
         if (!isLayoutResourceName(inflatedRoot.resources, layoutResId, CANDIDATE_LAYOUT_NAME)) return
