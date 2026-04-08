@@ -44,8 +44,8 @@ private val WETYPE_COLOR_REPLACEMENTS = mapOf(
     "k9" to Color.TRANSPARENT,
     "ng" to Color.TRANSPARENT,
     "pq" to Color.TRANSPARENT,
-    "hf" to Color.parseColor("#bbffffff"),
-    "l_" to Color.parseColor("#26ffffff")
+    "hf" to Color.parseColor("#e5ffffff"),
+    "l_" to Color.parseColor("#e5ffffff")
 )
 private val WETYPE_DRAWABLE_REPLACEMENTS = mapOf(
     "ic" to R.drawable.wetype_ic,
