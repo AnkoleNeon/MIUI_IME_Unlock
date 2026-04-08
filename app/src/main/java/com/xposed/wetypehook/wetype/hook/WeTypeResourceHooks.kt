@@ -13,6 +13,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.github.kyuubiran.ezxhelper.utils.Log
+import com.github.kyuubiran.ezxhelper.utils.findMethod
 import com.github.kyuubiran.ezxhelper.utils.getObjectAs
 import com.github.kyuubiran.ezxhelper.utils.hookAfter
 import com.github.kyuubiran.ezxhelper.utils.hookBefore
@@ -351,12 +352,10 @@ internal object WeTypeResourceHooks {
     }
 
     /**
-     * 新增：Hook 候选栏整体左侧内边距 (paddingStart)
-     * 对应设置项：candidatePaddingStartDp
+     * 新增：候选栏左侧内边距 (paddingStart)
      */
     fun hookCandidatePaddingStart() {
         runCatching {
-            // Hook ImeCandidateView 初始化完成时应用 paddingStart
             findMethod("com.tencent.wetype.plugin.hld.candidate.ImeCandidateView") {
                 name == "onFinishInflate" && parameterTypes.isEmpty()
             }.hookAfter { param ->
@@ -370,7 +369,7 @@ internal object WeTypeResourceHooks {
                     view.resources.displayMetrics
                 ).roundToInt()
 
-                // 只修改左侧 paddingStart，保留其他方向
+                // 只修改左侧 paddingStart
                 if (view.paddingStart != paddingStartPx) {
                     view.setPadding(
                         paddingStartPx,
