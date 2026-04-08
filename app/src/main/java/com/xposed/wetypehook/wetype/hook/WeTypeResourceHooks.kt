@@ -13,6 +13,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.github.kyuubiran.ezxhelper.utils.Log
+import com.github.kyuubiran.ezxhelper.utils.findConstructor
 import com.github.kyuubiran.ezxhelper.utils.findMethod
 import com.github.kyuubiran.ezxhelper.utils.getObjectAs
 import com.github.kyuubiran.ezxhelper.utils.hookAfter
@@ -352,40 +353,78 @@ internal object WeTypeResourceHooks {
     }
 
     /**
-     * 新增：候选栏左侧内边距 (paddingStart)
+     * 候选栏左侧内边距 (paddingStart) - 安全版本，防止闪退
      */
     fun hookCandidatePaddingStart() {
         runCatching {
-            findMethod("com.tencent.wetype.plugin.hld.candidate.ImeCandidateView") {
-                name == "onFinishInflate" && parameterTypes.isEmpty()
-            }.hookAfter { param ->
-                val view = param.thisObject as? View ?: return@hookAfter
-
-                val paddingStartDp = WeTypeSettings.getCandidatePaddingStartDpXposed()
-
-                val paddingStartPx = TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP,
-                    paddingStartDp,
-                    view.resources.displayMetrics
-                ).roundToInt()
-
-                // 只修改左侧 paddingStart
-                if (view.paddingStart != paddingStartPx) {
-                    view.setPadding(
-                        paddingStartPx,
-                        view.paddingTop,
-                        view.paddingEnd,
-                        view.paddingBottom
-                    )
-                    view.requestLayout()
-                    view.invalidate()
+            val candidateViewClass = loadClassOrNull("com.tencent.wetype.plugin.hld.candidate.ImeCandidateView")
+                ?: run {
+                    Log.i("ImeCandidateView class not found, skipping paddingStart hook")
+                    return@runCatching
                 }
+
+            // 优先尝试 onFinishInflate
+            runCatching {
+                findMethod(candidateViewClass) {
+                    name == "onFinishInflate" && parameterTypes.isEmpty()
+                }.hookAfter { param ->
+                    applyCandidatePaddingStart(param.thisObject as? View)
+                }
+                Log.i("Success: Hooked ImeCandidateView.onFinishInflate for paddingStart")
+                return@runCatching
             }
 
-            Log.i("Success: Hook candidate paddingStart (ImeCandidateView)")
+            // 备选：构造方法
+            runCatching {
+                findConstructor(candidateViewClass) { true }.hookAfter { param ->
+                    applyCandidatePaddingStart(param.thisObject as? View)
+                }
+                Log.i("Success: Hooked ImeCandidateView constructor for paddingStart")
+                return@runCatching
+            }
+
+            // 备选：包含 update / setCandidate / refresh 的方法
+            candidateViewClass.declaredMethods
+                .filter { method ->
+                    method.name.contains("update", true) ||
+                    method.name.contains("setCandidate", true) ||
+                    method.name.contains("refresh", true)
+                }
+                .forEach { method ->
+                    method.hookAfter { param ->
+                        applyCandidatePaddingStart(param.thisObject as? View)
+                    }
+                }
+
+            Log.i("Success: Hooked candidate paddingStart with fallback methods")
         }.onFailure {
-            Log.i("Failed: Hook candidate paddingStart")
+            Log.e("Failed to hook candidate paddingStart")
             Log.i(it)
+        }
+    }
+
+    /** 实际应用 paddingStart 的逻辑 */
+    private fun applyCandidatePaddingStart(view: View?) {
+        view ?: return
+
+        val paddingStartDp = WeTypeSettings.getCandidatePaddingStartDpXposed()
+        if (paddingStartDp <= 0f) return
+
+        val paddingStartPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            paddingStartDp,
+            view.resources.displayMetrics
+        ).roundToInt()
+
+        if (view.paddingStart != paddingStartPx) {
+            view.setPadding(
+                paddingStartPx,
+                view.paddingTop,
+                view.paddingEnd,
+                view.paddingBottom
+            )
+            view.requestLayout()
+            view.invalidate()
         }
     }
 
