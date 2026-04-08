@@ -18,7 +18,9 @@ object WeTypeSettings {
     private const val KEY_KEY_COLOR_HOOK_ALPHA = "key_color_hook_alpha"
     private const val KEY_CANDIDATE_BACKGROUND_CORNER = "candidate_background_corner"
     private const val KEY_CANDIDATE_PINYIN_LEFT_MARGIN_DP = "candidate_pinyin_left_margin_dp"
+    private const val KEY_CANDIDATE_PADDING_START_DP = "candidate_padding_start_dp"   // 新增
     private const val KEY_APPEARANCE_COLOR_PREFIX = "appearance_color_"
+
     const val DEFAULT_LIGHT_COLOR = 0xA0D1D3D8.toInt()
     const val DEFAULT_DARK_COLOR = 0x90101010.toInt()
     const val DEFAULT_BLUR_RADIUS = 60
@@ -31,6 +33,8 @@ object WeTypeSettings {
     const val DEFAULT_CANDIDATE_BACKGROUND_CORNER = 60f
     const val MAX_CANDIDATE_BACKGROUND_CORNER = 60
     const val DEFAULT_CANDIDATE_PINYIN_LEFT_MARGIN_DP = 16
+    const val DEFAULT_CANDIDATE_PADDING_START_DP = 0f      // 新增：默认 0dp
+    const val MAX_CANDIDATE_PADDING_START_DP = 32         // 新增：最大值
 
     private val xposedPrefsLock = Any()
 
@@ -54,30 +58,24 @@ object WeTypeSettings {
         val keyColorHookAlpha: Int,
         val candidateBackgroundCorner: Float,
         val candidatePinyinLeftMarginDp: Int,
+        val candidatePaddingStartDp: Float,          // 新增
         val appearanceColors: Map<String, Int>
     )
 
     fun getLightColor(context: Context): Int = readSnapshot(context).lightColor
-
     fun getDarkColor(context: Context): Int = readSnapshot(context).darkColor
-
     fun getBlurRadius(context: Context): Int = readSnapshot(context).blurRadius
-
     fun getCornerRadius(context: Context): Int = readSnapshot(context).cornerRadius
-
     fun isEdgeHighlightEnabled(context: Context): Boolean = readSnapshot(context).edgeHighlightEnabled
-
     fun getEdgeHighlightIntensity(context: Context): Int = readSnapshot(context).edgeHighlightIntensity
-
     fun getKeyOpacity(context: Context): Int = readSnapshot(context).keyOpacity
-
     fun getKeyColorHookAlpha(context: Context): Int = readSnapshot(context).keyColorHookAlpha
-
-    fun getCandidateBackgroundCorner(context: Context): Float =
-        readSnapshot(context).candidateBackgroundCorner
-
-    fun getCandidatePinyinLeftMarginDp(context: Context): Int =
-        readSnapshot(context).candidatePinyinLeftMarginDp
+    fun getCandidateBackgroundCorner(context: Context): Float = readSnapshot(context).candidateBackgroundCorner
+    fun getCandidatePinyinLeftMarginDp(context: Context): Int = readSnapshot(context).candidatePinyinLeftMarginDp
+    
+    // 新增：获取候选栏左侧 paddingStart
+    fun getCandidatePaddingStartDp(context: Context): Float =
+        readSnapshot(context).candidatePaddingStartDp
 
     fun getAppearanceColors(context: Context): Map<String, Int> = readSnapshot(context).appearanceColors
 
@@ -106,6 +104,7 @@ object WeTypeSettings {
         keyColorHookAlpha: Int,
         candidateBackgroundCorner: Float,
         candidatePinyinLeftMarginDp: Int,
+        candidatePaddingStartDp: Float,          // 新增参数
         appearanceColors: Map<String, Int>
     ) {
         val sanitizedAppearanceColors = WeTypeAppearanceColorGroups.groups.associate { group ->
@@ -123,37 +122,29 @@ object WeTypeSettings {
             keyColorHookAlpha = keyColorHookAlpha,
             candidateBackgroundCorner = candidateBackgroundCorner,
             candidatePinyinLeftMarginDp = candidatePinyinLeftMarginDp,
+            candidatePaddingStartDp = candidatePaddingStartDp,   // 新增
             appearanceColors = sanitizedAppearanceColors
         )
     }
 
     fun getCurrentBackgroundColorXposed(context: Context): Int {
         val snapshot = readSnapshotXposed()
-        val isDarkMode =
-            context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+        val isDarkMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
                 Configuration.UI_MODE_NIGHT_YES
         return if (isDarkMode) snapshot.darkColor else snapshot.lightColor
     }
 
     fun getBlurRadiusXposed(context: Context): Int = readSnapshotXposed().blurRadius
-
     fun getCornerRadiusXposed(context: Context): Int = readSnapshotXposed().cornerRadius
-
-    fun isEdgeHighlightEnabledXposed(context: Context): Boolean =
-        readSnapshotXposed().edgeHighlightEnabled
-
-    fun getEdgeHighlightIntensityXposed(context: Context): Int =
-        readSnapshotXposed().edgeHighlightIntensity
-
+    fun isEdgeHighlightEnabledXposed(context: Context): Boolean = readSnapshotXposed().edgeHighlightEnabled
+    fun getEdgeHighlightIntensityXposed(context: Context): Int = readSnapshotXposed().edgeHighlightIntensity
     fun getKeyOpacityXposed(context: Context): Int = readSnapshotXposed().keyOpacity
-
     fun getKeyColorHookAlphaXposed(): Int = readSnapshotXposed().keyColorHookAlpha
-
-    fun getCandidateBackgroundCornerXposed(): Float =
-        readSnapshotXposed().candidateBackgroundCorner
-
-    fun getCandidatePinyinLeftMarginDpXposed(): Int =
-        readSnapshotXposed().candidatePinyinLeftMarginDp
+    fun getCandidateBackgroundCornerXposed(): Float = readSnapshotXposed().candidateBackgroundCorner
+    fun getCandidatePinyinLeftMarginDpXposed(): Int = readSnapshotXposed().candidatePinyinLeftMarginDp
+    
+    // 新增：Xposed 侧获取候选栏左侧 paddingStart
+    fun getCandidatePaddingStartDpXposed(): Float = readSnapshotXposed().candidatePaddingStartDp
 
     fun getAppearanceColorXposed(groupId: String): Int =
         readSnapshotXposed().appearanceColors[groupId]
@@ -205,6 +196,7 @@ object WeTypeSettings {
         keyColorHookAlpha: Int,
         candidateBackgroundCorner: Float,
         candidatePinyinLeftMarginDp: Int,
+        candidatePaddingStartDp: Float,        // 新增参数
         appearanceColors: Map<String, Int>
     ) {
         val editor = appPreferences(context)
@@ -225,6 +217,11 @@ object WeTypeSettings {
                 KEY_CANDIDATE_PINYIN_LEFT_MARGIN_DP,
                 candidatePinyinLeftMarginDp.coerceIn(0, 64)
             )
+            .putFloat(                                      // 新增
+                KEY_CANDIDATE_PADDING_START_DP,
+                candidatePaddingStartDp.coerceIn(0f, MAX_CANDIDATE_PADDING_START_DP.toFloat())
+            )
+
         WeTypeAppearanceColorGroups.groups.forEach { group ->
             editor.putInt(
                 "$KEY_APPEARANCE_COLOR_PREFIX${group.id}",
@@ -284,6 +281,10 @@ object WeTypeSettings {
                 KEY_CANDIDATE_PINYIN_LEFT_MARGIN_DP,
                 DEFAULT_CANDIDATE_PINYIN_LEFT_MARGIN_DP
             ).coerceIn(0, 64),
+            candidatePaddingStartDp = getFloat(                 // 新增
+                KEY_CANDIDATE_PADDING_START_DP,
+                DEFAULT_CANDIDATE_PADDING_START_DP
+            ).coerceIn(0f, MAX_CANDIDATE_PADDING_START_DP.toFloat()),
             appearanceColors = WeTypeAppearanceColorGroups.groups.associate { group ->
                 group.id to getInt(
                     "$KEY_APPEARANCE_COLOR_PREFIX${group.id}",
@@ -304,6 +305,7 @@ object WeTypeSettings {
             !contains(KEY_KEY_COLOR_HOOK_ALPHA) &&
             !contains(KEY_CANDIDATE_BACKGROUND_CORNER) &&
             !contains(KEY_CANDIDATE_PINYIN_LEFT_MARGIN_DP) &&
+            !contains(KEY_CANDIDATE_PADDING_START_DP) &&          // 新增
             WeTypeAppearanceColorGroups.groups.none { group ->
                 contains("$KEY_APPEARANCE_COLOR_PREFIX${group.id}")
             }
@@ -324,6 +326,7 @@ object WeTypeSettings {
         keyColorHookAlpha = DEFAULT_KEY_COLOR_HOOK_ALPHA,
         candidateBackgroundCorner = DEFAULT_CANDIDATE_BACKGROUND_CORNER,
         candidatePinyinLeftMarginDp = DEFAULT_CANDIDATE_PINYIN_LEFT_MARGIN_DP,
+        candidatePaddingStartDp = DEFAULT_CANDIDATE_PADDING_START_DP,   // 新增
         appearanceColors = WeTypeAppearanceColorGroups.defaultColors()
     )
 }
