@@ -103,7 +103,7 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
     }
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
-        if (PropertyUtils["ro.miui.support_miui_ime_bottom", "0"] != "1") return
+        if (lpparam.packageName != WETYPE_PACKAGE && PropertyUtils["ro.miui.support_miui_ime_bottom", "0"] != "1") return
 
         HookEnvironment.init(lpparam.classLoader, TAG)
         Log.i("miuiime is supported")
