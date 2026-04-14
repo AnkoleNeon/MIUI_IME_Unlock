@@ -360,8 +360,6 @@ private fun ActivationEntryScreen(
                 }
             }
         }
-
-
     }
 }
 
@@ -430,6 +428,7 @@ private fun WeTypeSettingsScreen(
     var candidateViewPaddingStartDp by rememberSaveable {
         mutableStateOf(snapshot.candidateViewPaddingStartDp.toString())
     }
+
     val appearanceGroupColors = rememberSaveable(
         saver = listSaver(
             save = { it.toList() },
@@ -495,6 +494,8 @@ private fun WeTypeSettingsScreen(
             candidateBackgroundCorner = candidateBackgroundCorner.toFloat(),
             candidatePinyinLeftMarginDp = candidatePinyinLeftMarginDp.toIntOrNull()
                 ?: WeTypeSettings.DEFAULT_CANDIDATE_PINYIN_LEFT_MARGIN_DP,
+            candidateViewPaddingStartDp = candidateViewPaddingStartDp.toIntOrNull()
+                ?: WeTypeSettings.DEFAULT_CANDIDATE_VIEW_PADDING_START_DP,
             appearanceColors = currentAppearanceColors()
         )
         if (showSavedToast) {
@@ -513,6 +514,7 @@ private fun WeTypeSettingsScreen(
         keyColorHookAlpha = WeTypeSettings.DEFAULT_KEY_COLOR_HOOK_ALPHA
         candidateBackgroundCorner = WeTypeSettings.DEFAULT_CANDIDATE_BACKGROUND_CORNER.roundToInt()
         candidatePinyinLeftMarginDp = WeTypeSettings.DEFAULT_CANDIDATE_PINYIN_LEFT_MARGIN_DP.toString()
+        candidateViewPaddingStartDp = WeTypeSettings.DEFAULT_CANDIDATE_VIEW_PADDING_START_DP.toString()
         appearanceGroups.forEachIndexed { index, group ->
             appearanceGroupColors[index] = group.defaultColor
         }
@@ -589,7 +591,6 @@ private fun WeTypeSettingsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 颜色分组
             item {
                 SmallTitle(
                     text = stringResource(R.string.settings_group_color)
@@ -599,7 +600,6 @@ private fun WeTypeSettingsScreen(
                     insideMargin = PaddingValues(0.dp)
                 ) {
                     Column {
-                        // 模式切换 - 使用 TabRow
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -628,7 +628,6 @@ private fun WeTypeSettingsScreen(
                             )
                         }
 
-                        // 透明度滑块
                         SliderPreferenceItem(
                             title = stringResource(R.string.settings_alpha_title),
                             value = alphaValue,
@@ -707,7 +706,6 @@ private fun WeTypeSettingsScreen(
                 }
             }
 
-            // 外观分组
             item {
                 SmallTitle(
                     text = stringResource(R.string.settings_group_appearance)
@@ -735,7 +733,6 @@ private fun WeTypeSettingsScreen(
 
                         HorizontalDivider()
 
-                        // 模糊滑块
                         SliderPreferenceItem(
                             title = stringResource(R.string.settings_blur_title),
                             value = blurRadius,
@@ -743,7 +740,6 @@ private fun WeTypeSettingsScreen(
                             onValueChange = { blurRadius = it }
                         )
 
-                        // 圆角滑块
                         SliderPreferenceItem(
                             title = stringResource(R.string.settings_corner_title),
                             value = cornerRadius,
@@ -783,6 +779,17 @@ private fun WeTypeSettingsScreen(
                             }
                         )
 
+                        NumericTextSettingItem(
+                            title = stringResource(R.string.settings_candidate_view_padding_start_title),
+                            summary = stringResource(R.string.settings_candidate_view_padding_start_desc),
+                            value = candidateViewPaddingStartDp,
+                            onValueChange = { input ->
+                                if (sanitizeIntegerInput(input, maxLength = 2) != null) {
+                                    candidateViewPaddingStartDp = input
+                                }
+                            }
+                        )
+
                         SliderPreferenceItem(
                             title = stringResource(R.string.settings_key_color_hook_alpha_title),
                             value = keyColorHookAlpha,
@@ -800,7 +807,6 @@ private fun WeTypeSettingsScreen(
                 }
             }
 
-            // 操作分组
             item {
                 SmallTitle(
                     text = stringResource(R.string.settings_group_actions)
@@ -991,7 +997,7 @@ private fun PreviewCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterHorizontally
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -1141,7 +1147,7 @@ private fun AppearanceColorGroupEditor(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
@@ -1276,7 +1282,7 @@ private fun SliderPreferenceItem(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = title,
