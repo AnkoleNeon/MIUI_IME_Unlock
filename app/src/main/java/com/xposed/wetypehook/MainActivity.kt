@@ -427,6 +427,9 @@ private fun WeTypeSettingsScreen(
     var candidatePinyinLeftMarginDp by rememberSaveable {
         mutableStateOf(snapshot.candidatePinyinLeftMarginDp.toString())
     }
+    var candidateViewPaddingStartDp by rememberSaveable {
+        mutableStateOf(snapshot.candidateViewPaddingStartDp.toString())
+    }
     val appearanceGroupColors = rememberSaveable(
         saver = listSaver(
             save = { it.toList() },
