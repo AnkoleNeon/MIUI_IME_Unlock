@@ -29,7 +29,7 @@ import kotlin.math.roundToInt
 
 internal object WeTypeResourceHooks {
     private const val CANDIDATE_PINYIN_CONTAINER_ACCESSOR_CLASS =
-        "com.tencent.wetype.plugin.hld.candidate.ImeCandidateView\$d2"
+        "com.tencent.wetype.plugin.hld.candidate.ImeCandidateView\$d5"
     private val SETTING_OPAQUE_BACKGROUND_VIEW_CLASSES = listOf(
         "com.tencent.wetype.plugin.hld.view.settingkeyboard.S10SettingKeyboardTypeView",
         "com.tencent.wetype.plugin.hld.view.settingkeyboard.S10SettingCustomToolbarView"
@@ -334,7 +334,7 @@ internal object WeTypeResourceHooks {
     fun hookCandidatePinyinLeftMargin() {
         runCatching {
             val candidateContainerAccessorClass = loadClassOrNull(CANDIDATE_PINYIN_CONTAINER_ACCESSOR_CLASS)
-                ?: error("Failed to load ImeCandidateView\$d2")
+                ?: error("Failed to load ImeCandidateView\$d5")
             candidateContainerAccessorClass.getMethod("invoke").hookAfter { param ->
                 val container = param.result as? FrameLayout ?: return@hookAfter
                 applyCandidatePinyinLeftMargin(container)
