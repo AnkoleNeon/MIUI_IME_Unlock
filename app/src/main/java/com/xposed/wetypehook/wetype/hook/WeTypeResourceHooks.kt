@@ -347,6 +347,42 @@ internal object WeTypeResourceHooks {
         }
     }
 
+    /** 新增：Hook ImeCandidateView 的 paddingStart（实现你想要的 r/w/d5.xml 中 android:paddingStart 效果） */
+    fun hookCandidateViewPaddingStart() {
+        runCatching {
+            val candidateViewClass = loadClassOrNull(
+                "com.tencent.wetype.plugin.hld.candidate.ImeCandidateView"
+            ) ?: run {
+                Log.i("Failed to load ImeCandidateView for padding hook")
+                return@runCatching
+            }
+
+            // Hook 生命周期方法
+            listOf("onFinishInflate", "onAttachedToWindow").forEach { methodName ->
+                runCatching {
+                    candidateViewClass.getDeclaredMethod(methodName)
+                        .hookAfter { param ->
+                            val view = param.thisObject as? View ?: return@hookAfter
+                            applyCandidateViewPaddingStart(view)
+                        }
+                }
+            }
+
+            // Hook 构造函数（更全面覆盖）
+            candidateViewClass.declaredConstructors.forEach { constructor ->
+                constructor.hookAfter { param ->
+                    val view = param.thisObject as? View ?: return@hookAfter
+                    view.post { applyCandidateViewPaddingStart(view) }
+                }
+            }
+
+            Log.i("Success: Hook ImeCandidateView paddingStart")
+        }.onFailure {
+            Log.i("Failed: Hook ImeCandidateView paddingStart")
+            Log.i(it)
+        }
+    }
+
     fun hookSettingKeyboardOpaqueBackground() {
         SETTING_OPAQUE_BACKGROUND_VIEW_CLASSES.forEach { className ->
             runCatching {
@@ -404,6 +440,28 @@ internal object WeTypeResourceHooks {
             view.paddingEnd,
             view.paddingBottom
         )
+    }
+
+    /** 新增：应用 ImeCandidateView 的自定义 paddingStart */
+    private fun applyCandidateViewPaddingStart(view: View) {
+        val desiredDp = WeTypeSettings.getCandidateViewPaddingStartDpXposed()
+
+        val paddingStartPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            desiredDp,
+            view.resources.displayMetrics
+        ).roundToInt()
+
+        if (view.paddingStart == paddingStartPx) return
+
+        view.setPaddingRelative(
+            paddingStartPx,
+            view.paddingTop,
+            view.paddingEnd,
+            view.paddingBottom
+        )
+        view.requestLayout()
+        view.invalidate()
     }
 
     private fun applyOpaqueSettingKeyboardBackground(target: Any?) {
