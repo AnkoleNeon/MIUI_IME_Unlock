@@ -31,7 +31,9 @@ object WeTypeSettings {
     const val DEFAULT_CANDIDATE_BACKGROUND_CORNER = 60f
     const val MAX_CANDIDATE_BACKGROUND_CORNER = 60
     const val DEFAULT_CANDIDATE_PINYIN_LEFT_MARGIN_DP = 16
+    const val DEFAULT_CANDIDATE_VIEW_PADDING_START_DP = 10
 
+    
     private val xposedPrefsLock = Any()
 
     @Volatile
@@ -54,6 +56,7 @@ object WeTypeSettings {
         val keyColorHookAlpha: Int,
         val candidateBackgroundCorner: Float,
         val candidatePinyinLeftMarginDp: Int,
+        val candidateViewPaddingStartDp: Int,
         val appearanceColors: Map<String, Int>
     )
 
@@ -79,6 +82,14 @@ object WeTypeSettings {
     fun getCandidatePinyinLeftMarginDp(context: Context): Int =
         readSnapshot(context).candidatePinyinLeftMarginDp
 
+    fun getCandidateViewPaddingStartDpXposed(): Int {
+        return getInt("candidate_view_padding_start_dp", DEFAULT_CANDIDATE_VIEW_PADDING_START_DP)
+    }
+
+    fun setCandidateViewPaddingStartDpXposed(value: Int) {
+        putInt("candidate_view_padding_start_dp", value)
+    }
+    
     fun getAppearanceColors(context: Context): Map<String, Int> = readSnapshot(context).appearanceColors
 
     fun initXposed() {
