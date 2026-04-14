@@ -142,6 +142,7 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
         hookActivationHeartbeat(sourcePackage)
         WeTypeSettings.configureStorage(sourcePackage)
         WeTypeSettings.initXposed()
+        WeTypeResourceHooks.hookCandidateViewPaddingStart()
         hookWeTypeFont()
         hookWeTypeTransparentColors()
         hookWeTypeXmlDrawables()
